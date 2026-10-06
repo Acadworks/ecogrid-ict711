@@ -1,0 +1,21 @@
+[project]
+name = "ecogrid"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = ["pydantic>=2"]
+
+[project.optional-dependencies]
+dev = ["pytest", "import-linter", "ruff", "bandit", "pip-audit"]
+
+[tool.pytest.ini_options]
+markers = ["performance: throughput/latency fitness functions (also run nightly)"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "C90"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
