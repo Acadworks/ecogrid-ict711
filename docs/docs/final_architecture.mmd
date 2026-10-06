@@ -1,0 +1,46 @@
+flowchart LR
+    SM["Smart meters<br/>(10,000 · 1-min interval)"]
+    CL["Web / Mobile clients"]
+    PP["Payment provider<br/>(HTTPS + webhook)"]
+    IDP["Identity provider<br/>(OAuth 2.0 / OIDC)"]
+
+    subgraph ING["Deployable 1 · Meter Ingestion Worker (Python) · scale horizontally"]
+      ACL["Vendor adapters / ACL<br/>kW x interval to kWh, Wh to kWh"]
+      VAL["Validation + dedup<br/>(meter event ID)"]
+      AV["Availability calculator"]
+      ACL --> VAL --> AV
+    end
+
+    subgraph MON["Deployable 2 · Modular Monolith (Python + FastAPI)"]
+      MP["Marketplace (CORE)<br/>EnergyOffer + Reservation, Trade<br/>availability read model"]
+      ST["Settlement and Payments<br/>Settlement, double-entry ledger"]
+      ID["Identity module"]
+      NT["Notifications module"]
+      OB[("Outbox table")]
+      MP -->|"TradeConfirmed v1<br/>(same DB transaction)"| OB
+      OB -->|"outbox relay"| ST
+      OB --> NT
+    end
+
+    MQ["MQTT broker<br/>Eclipse Mosquitto<br/>QoS 1 · shared subscriptions"]
+    TS[("TimescaleDB<br/>meter_readings hypertable<br/>~14.4 M rows/day")]
+    PG[("PostgreSQL<br/>offers, trades, settlements, ledger")]
+    KF["Kafka (deferred)<br/>trigger: >1,000 msg/s, replay,<br/>or 3+ consumers"]
+
+    SM -->|"MQTT"| MQ --> ACL
+    VAL --> TS
+    AV -->|"EnergyAvailabilityUpdated v1<br/>(DB outbox, async)"| MP
+    AV -->|"DeliveredEnergyMeasured v1<br/>(DB outbox, async)"| ST
+    CL -->|"REST"| MP
+    MP -.-> PG
+    ST -.-> PG
+    ST <-->|"ACL"| PP
+    IDP -->|"Conformist"| ID
+    MQ -.->|"future"| KF
+
+    classDef core fill:#fff3cd,stroke:#b8860b,stroke-width:3px,color:#000;
+    classDef sup fill:#e3f2fd,stroke:#1e6fb5,color:#000;
+    classDef gen fill:#eeeeee,stroke:#555,color:#000;
+    classDef ext fill:#fff,stroke:#999,stroke-dasharray:4 3,color:#000;
+    classDef future fill:#fff,stroke:#c0392b,stroke-dasharray:6 4,color:#c0392b;
+    class MP core; class ST,ACL,VAL,AV sup; class ID,NT gen; class SM,CL,PP,IDP ext; class KF future;
