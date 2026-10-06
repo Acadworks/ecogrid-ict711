@@ -1,0 +1,24 @@
+[importlinter]
+root_package = ecogrid
+
+[importlinter:contract:independent-contexts]
+name = Bounded contexts are independent (communicate only via ecogrid.contracts)
+type = independence
+modules =
+    ecogrid.marketplace
+    ecogrid.meter_data
+    ecogrid.settlement
+    ecogrid.identity
+    ecogrid.notifications
+
+[importlinter:contract:contracts-are-leaf]
+name = Published Language must not depend on any bounded context
+type = forbidden
+source_modules =
+    ecogrid.contracts
+forbidden_modules =
+    ecogrid.marketplace
+    ecogrid.meter_data
+    ecogrid.settlement
+    ecogrid.identity
+    ecogrid.notifications
