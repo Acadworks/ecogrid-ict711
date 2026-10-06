@@ -1,0 +1,37 @@
+flowchart LR
+    VA["Smart Meter Vendor A<br/>(kW, MQTT/JSON)"]
+    VB["Smart Meter Vendor B<br/>(Wh, HTTP)"]
+    IDP["External Identity Provider<br/>(OAuth 2.0 / OIDC)"]
+    PP["External Payment Provider"]
+
+    MD["<b>Meter Data</b><br/>Supporting · Member 2<br/>Adapters · Validation<br/>Deduplication · Availability"]
+    MP["<b>Marketplace</b><br/>CORE · Member 1<br/>EnergyOffer + Reservation<br/>Trade · Availability read model"]
+    SP["<b>Settlement and Payments</b><br/>Supporting · Member 3<br/>Settlement · Double-entry ledger<br/>Reconciliation"]
+    ID["<b>Identity</b><br/>Generic · Member 4<br/>Users · Households"]
+    NT["<b>Notifications</b><br/>Generic · Member 4<br/>Email / SMS / Push"]
+
+    VA -->|"ACL: kW x interval to kWh"| MD
+    VB -->|"ACL: Wh to kWh"| MD
+    PP <-->|"ACL: API + webhook"| SP
+    IDP -->|"Conformist"| ID
+
+    MD -->|"Customer-Supplier + Published Language<br/>EnergyAvailabilityUpdated v1 (async)"| MP
+    MD -->|"Customer-Supplier + Published Language<br/>DeliveredEnergyMeasured v1 (async)"| SP
+    MP -->|"Customer-Supplier + Published Language<br/>TradeConfirmed v1: qty, unit_price (async)"| SP
+    SP -.->|"SettlementCompleted / PaymentFailed v1"| MP
+
+    ID -->|"Open Host Service + PL<br/>participant_id, household_id"| MD
+    ID -->|"OHS + PL"| MP
+    ID -->|"OHS + PL"| SP
+
+    MP -.->|"Trade events"| NT
+    SP -.->|"Payment events"| NT
+
+    classDef core fill:#fff3cd,stroke:#b8860b,stroke-width:3px,color:#000;
+    classDef supporting fill:#e3f2fd,stroke:#1e6fb5,stroke-width:2px,color:#000;
+    classDef generic fill:#eeeeee,stroke:#555,stroke-width:2px,color:#000;
+    classDef external fill:#ffffff,stroke:#999,stroke-dasharray:4 3,color:#000;
+    class MP core;
+    class MD,SP supporting;
+    class ID,NT generic;
+    class VA,VB,IDP,PP external;
